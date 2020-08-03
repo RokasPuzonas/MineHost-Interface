@@ -5,7 +5,7 @@ with open("README.md", "r") as f:
 
 setuptools.setup(
 	name="minehost-interface",
-	version="1.0.0",
+	version="1.0.1",
 	author="Rokas Puzonas",
 	author_email="rokas.puz@gmail.com",
 	description="A simple for interacting with minehost servers.",
@@ -24,6 +24,6 @@ setuptools.setup(
 		"Topic :: Utilities",
 		"Intended Audience :: Developers",
 	],
-	install_requires=["beautifulsoup4", "requests", "paramiko"],
+	install_requires=["beautifulsoup4", "requests", "paramiko", "lxml"],
 	python_requires=">=3.8",
 )
