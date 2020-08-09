@@ -1,37 +1,57 @@
 from bs4 import BeautifulSoup, Tag
 import re
-from ftplib import FTP
-from datetime import datetime
+import ftplib
+import datetime
 import paramiko
 import time
 
-datetime_format = "%Y-%m-%d %H:%M:%S"
-
+from .session import Session
 
 class InvalidDomainException(Exception):
+	"""Raised when trying to change a server address with an unsupported domain.
+	"""
 	pass
+
 
 # TODO: Make the sending of commands not need to sleep inbetween, If It dosen't sleep then it dosen'y always send the commands to the server
 class CommandSender:
-	def __init__(self, host, username, password, port=22):
+	"""Used to directly send commands to a minecraft server.
+	Rather than loggin into ssh, entering console manually.
+	"""
+
+	def __init__(self, host: str, password: str, port: int = 22):
+		"""Initializes ssh client and tries connecting to given host
+
+		:param host: Host address used while connecting to ssh
+		:type host: str
+		:param password: Password used for authentication
+		:type password: str
+		:param port: Port used while connecting to ssh, defaults to 22
+		:type port: int, optional
+		"""
 		self.ssh = paramiko.SSHClient()
 		self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 		self.ssh.connect(host, port=port, username="console", password=password)
 		self.channel = None
 
 	def __enter__(self):
-		if self.channel is None:
-			self.open()
+		self.open()
 		return self
 
 	def __exit__(self, _1, _2, _3):
-		if self.channel is not None:
-			self.close()
+		self.close()
 
 	def __del__(self):
 		self.ssh.close()
 
 	def send(self, *args):
+		"""Send commands to the server. You are able to send to multiple commands by giving multiple arguments.
+		
+		:param \*args: Commands you would like the server to execute.
+		:type \*args: str
+
+		:raises Exception: Raised if channel is not open
+		"""
 		if self.channel is None:
 			raise Exception("Channel is not open")
 		
@@ -39,6 +59,10 @@ class CommandSender:
 		time.sleep(0.5)
 
 	def open(self):
+		"""Opens a channel used to send commands.
+
+		:raises Exception: Raised if channel is already open
+		"""
 		if self.channel is not None:
 			raise Exception("Channel is already open")
 
@@ -47,14 +71,31 @@ class CommandSender:
 		time.sleep(0.5)
 
 	def close(self):
+		"""Closes channel used to send commands.
+
+		:raises Exception: Raised if channel is already closed
+		"""
 		if self.channel is None:
 			raise Exception("Channel is not open")
 
 		self.channel.close()
 		self.channel = None
 
+# TODO: A way to edit the server.properties file easier.
 class MCServer:
-	def __init__(self, server_id, session):
+	"""Used to control a minehost minecraft server
+	"""
+
+	__attrs__ = [ "start_file" ]
+
+	def __init__(self, server_id: str, session: Session):
+		"""Initializes minecraft server instance. Retrieves some initial data like: address, ip and port.
+
+		:param server_id: [description]
+		:type server_id: str
+		:param session: [description]
+		:type session: Session
+		"""
 		self.id = server_id
 		self.session = session
 		
@@ -71,22 +112,34 @@ class MCServer:
 		self.__key = soup.find("input", id="khd")["value"]
 
 	def __repr__(self):
-		return f"<MinecraftServer({self.short_address})>"
+		return f"<MCServer({self.ip}:{self.port})>"
 
 	@property
-	def __url(self):
+	def __url(self) -> str:
 		return f"/minecraft-serverio-valdymas/{self.id}"
 
-	def getPassword(self):
+	def getPassword(self) -> str:
+		"""Retrieves the password used to login to SSH, FTP and SFTP.
+
+		:return: A string containing the password
+		"""
 		res = self.session.get(f"{self.__url}/failai")
 		soup = BeautifulSoup(res.text, "lxml")
 		return soup.select("table td span:nth-child(2)")[0].text
 
-	def changePassword(self):
+	def changePassword(self) -> bool:
+		"""Change the current password to a new randomly generated password. Passwords can only be changed every few minutes.
+
+		:return: Whether the change was successful
+		"""
 		res = self.session.get(f"{self.__url}/failai/change-password")
 		return res.text.find("class=\"alert alert-info\"") > 0
 
-	def getInfo(self):
+	def getStats(self) -> dict:
+		"""Returns a dictionary containing the current statistcs of the server.
+
+		:return: A dictionary containing "state", "version", "ping", "online_players" and "max_players"
+		"""
 		res = self.session.get(self.__url)
 		soup = BeautifulSoup(res.text, "lxml")
 		
@@ -110,10 +163,14 @@ class MCServer:
 			"max_players": max_players
 		}
 	
-	def getExpirationDate(self):
+	def getExpirationDate(self) -> datetime.datetime:
+		"""Returns the date at which the server will expire.
+
+		:return: A datetime object
+		"""
 		res = self.session.get(f"{self.__url}/finansai")
 		date_match = re.search(r"Serveris galioja iki: (\d{4}-\d{2}-\d{2} \d{1,2}:\d{2}:\d{2})", res.text)
-		return datetime.strptime(date_match.group(1), datetime_format)
+		return datetime.datetime.strptime(date_match.group(1), "%Y-%m-%d %H:%M:%S")
 
 	@property
 	def start_file(self):
@@ -168,20 +225,32 @@ class MCServer:
 		if res.content.decode("UTF-8") == "Šis subdomenas jau užimtas. Bandykite kitą":
 			raise InvalidDomainException()
 
-	def FTP(self):
-		ftp = FTP()
+	def FTP(self) -> ftplib.FTP:
+		"""Creates a new FTP connection to the server. The password will be automatically inputted.
+
+		:return: An open FTP connection
+		"""
+		ftp = ftplib.FTP()
 		ftp.connect(self.ip, self.ftp_port)
 		ftp.login("serveris", self.getPassword())
 		return ftp
 
-	def SSH(self):
+	def SSH(self) -> paramiko.SSHClient:
+		"""Creates a new SSH connection to the server. The password will be automatically inputted.
+
+		:return: An open SSH connection
+		"""
 		ssh = paramiko.SSHClient()
 		ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 		ssh.connect(self.ip, port=self.ssh_port, username="console", password=self.getPassword())
 		return ssh
 
-	def CommandSender(self):
-		return CommandSender(self.ip, "serveris", self.getPassword(), self.ssh_port)
+	def CommandSender(self) -> CommandSender:
+		"""Creates a new CommandSender which allow you to easily send commands to the console.
+
+		:return: The newly created CommandSender.
+		"""
+		return CommandSender(self.ip, self.getPassword(), self.ssh_port)
 
 	def __isControlLocked(self):
 		res = self.session.post("/query/user_loadingct.php", data={
@@ -189,7 +258,11 @@ class MCServer:
 		})
 		return res.text != ""
 
-	def start(self):
+	def start(self) -> bool:
+		"""Tries starting the server.
+
+		:return: Whether if it succeded in starting the server.
+		"""
 		if self.__isControlLocked():
 			return False
 
@@ -200,7 +273,11 @@ class MCServer:
 		})
 		return True
 
-	def stop(self):
+	def stop(self) -> bool:
+		"""Tries stopping the server.
+
+		:return: Whether if it succeded in stopping the server.
+		"""
 		if self.__isControlLocked():
 			return False
 
@@ -211,7 +288,11 @@ class MCServer:
 		})
 		return True
 
-	def kill(self):
+	def kill(self) -> bool:
+		"""Tries killing the server. This is the same as stopping but killing dosen't save anything.
+
+		:return: Whether if it succeded in killing the server.
+		"""
 		if self.__isControlLocked():
 			return False
 
