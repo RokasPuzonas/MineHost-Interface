@@ -1,0 +1,406 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>minehost.server &#8212; MineHost Interface 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for minehost.server</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">bs4</span> <span class="kn">import</span> <span class="n">BeautifulSoup</span><span class="p">,</span> <span class="n">Tag</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">ftplib</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">paramiko</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">from</span> <span class="nn">.session</span> <span class="kn">import</span> <span class="n">Session</span>
+
+<div class="viewcode-block" id="InvalidDomainException"><a class="viewcode-back" href="../../../api/#minehost.InvalidDomainException">[docs]</a><span class="k">class</span> <span class="nc">InvalidDomainException</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;Raised when trying to change a server address with an unsupported domain.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="k">pass</span></div>
+
+
+<span class="c1"># TODO: Make the sending of commands not need to sleep inbetween, If It dosen&#39;t sleep then it dosen&#39;y always send the commands to the server</span>
+<div class="viewcode-block" id="CommandSender"><a class="viewcode-back" href="../../../api/#minehost.CommandSender">[docs]</a><span class="k">class</span> <span class="nc">CommandSender</span><span class="p">:</span>
+	<span class="sd">&quot;&quot;&quot;Used to directly send commands to a minecraft server.</span>
+<span class="sd">	Rather than loggin into ssh, entering console manually.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+
+	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">password</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">port</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">22</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;Initializes ssh client and tries connecting to given host</span>
+
+<span class="sd">		:param host: Host address used while connecting to ssh</span>
+<span class="sd">		:type host: str</span>
+<span class="sd">		:param password: Password used for authentication</span>
+<span class="sd">		:type password: str</span>
+<span class="sd">		:param port: Port used while connecting to ssh, defaults to 22</span>
+<span class="sd">		:type port: int, optional</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">ssh</span> <span class="o">=</span> <span class="n">paramiko</span><span class="o">.</span><span class="n">SSHClient</span><span class="p">()</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">ssh</span><span class="o">.</span><span class="n">set_missing_host_key_policy</span><span class="p">(</span><span class="n">paramiko</span><span class="o">.</span><span class="n">AutoAddPolicy</span><span class="p">())</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">ssh</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="n">port</span><span class="p">,</span> <span class="n">username</span><span class="o">=</span><span class="s2">&quot;console&quot;</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="n">password</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">channel</span> <span class="o">=</span> <span class="kc">None</span>
+
+	<span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">open</span><span class="p">()</span>
+		<span class="k">return</span> <span class="bp">self</span>
+
+	<span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_1</span><span class="p">,</span> <span class="n">_2</span><span class="p">,</span> <span class="n">_3</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+	<span class="k">def</span> <span class="fm">__del__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">ssh</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+<div class="viewcode-block" id="CommandSender.send"><a class="viewcode-back" href="../../../api/#minehost.CommandSender.send">[docs]</a>	<span class="k">def</span> <span class="nf">send</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;Send commands to the server. You are able to send to multiple commands by giving multiple arguments.</span>
+<span class="sd">		</span>
+<span class="sd">		:param \*args: Commands you would like the server to execute.</span>
+<span class="sd">		:type \*args: str</span>
+
+<span class="sd">		:raises Exception: Raised if channel is not open</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">channel</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+			<span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Channel is not open&quot;</span><span class="p">)</span>
+		
+		<span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="o">.</span><span class="n">sendall</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">args</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+		<span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CommandSender.open"><a class="viewcode-back" href="../../../api/#minehost.CommandSender.open">[docs]</a>	<span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;Opens a channel used to send commands.</span>
+
+<span class="sd">		:raises Exception: Raised if channel is already open</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">channel</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+			<span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Channel is already open&quot;</span><span class="p">)</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">channel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssh</span><span class="o">.</span><span class="n">invoke_shell</span><span class="p">()</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="o">.</span><span class="n">sendall</span><span class="p">(</span><span class="s2">&quot;console</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+		<span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CommandSender.close"><a class="viewcode-back" href="../../../api/#minehost.CommandSender.close">[docs]</a>	<span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;Closes channel used to send commands.</span>
+
+<span class="sd">		:raises Exception: Raised if channel is already closed</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">channel</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+			<span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Channel is not open&quot;</span><span class="p">)</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">channel</span> <span class="o">=</span> <span class="kc">None</span></div></div>
+
+<span class="c1"># TODO: A way to edit the server.properties file easier.</span>
+<div class="viewcode-block" id="MCServer"><a class="viewcode-back" href="../../../api/#minehost.MCServer">[docs]</a><span class="k">class</span> <span class="nc">MCServer</span><span class="p">:</span>
+	<span class="sd">&quot;&quot;&quot;Used to control a minehost minecraft server</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+
+	<span class="n">__attrs__</span> <span class="o">=</span> <span class="p">[</span> <span class="s2">&quot;start_file&quot;</span> <span class="p">]</span>
+
+<div class="viewcode-block" id="MCServer.__init__"><a class="viewcode-back" href="../../../api/#minehost.MCServer.__init__">[docs]</a>	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">server_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;Initializes minecraft server instance. Retrieves some initial data like: address, ip and port.</span>
+
+<span class="sd">		:param server_id: [description]</span>
+<span class="sd">		:type server_id: str</span>
+<span class="sd">		:param session: [description]</span>
+<span class="sd">		:type session: Session</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">server_id</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">session</span>
+		
+		<span class="n">info_res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__url</span><span class="p">)</span>
+		<span class="n">soup</span> <span class="o">=</span> <span class="n">BeautifulSoup</span><span class="p">(</span><span class="n">info_res</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="s2">&quot;lxml&quot;</span><span class="p">)</span>
+		
+		<span class="n">info_rows</span> <span class="o">=</span> <span class="n">soup</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="s2">&quot;table td[align=right] b&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">address</span> <span class="o">=</span> <span class="n">info_rows</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">ip</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">port</span> <span class="o">=</span> <span class="n">info_rows</span><span class="p">[</span><span class="mi">7</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">port</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="p">)</span>
+
+		<span class="n">control_res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">__url</span><span class="si">}</span><span class="s2">/valdymas&quot;</span><span class="p">)</span>
+		<span class="n">soup</span> <span class="o">=</span> <span class="n">BeautifulSoup</span><span class="p">(</span><span class="n">control_res</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="s2">&quot;lxml&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">__key</span> <span class="o">=</span> <span class="n">soup</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;input&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">&quot;khd&quot;</span><span class="p">)[</span><span class="s2">&quot;value&quot;</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="MCServer.__repr__"><a class="viewcode-back" href="../../../api/#minehost.MCServer.__repr__">[docs]</a>	<span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&lt;MCServer(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">ip</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="si">}</span><span class="s2">)&gt;&quot;</span></div>
+
+	<span class="nd">@property</span>
+	<span class="k">def</span> <span class="nf">__url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+		<span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;/minecraft-serverio-valdymas/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span>
+
+<div class="viewcode-block" id="MCServer.getPassword"><a class="viewcode-back" href="../../../api/#minehost.MCServer.getPassword">[docs]</a>	<span class="k">def</span> <span class="nf">getPassword</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+		<span class="sd">&quot;&quot;&quot;Retrieves the password used to login to SSH, FTP and SFTP.</span>
+
+<span class="sd">		:return: A string containing the password</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">__url</span><span class="si">}</span><span class="s2">/failai&quot;</span><span class="p">)</span>
+		<span class="n">soup</span> <span class="o">=</span> <span class="n">BeautifulSoup</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="s2">&quot;lxml&quot;</span><span class="p">)</span>
+		<span class="k">return</span> <span class="n">soup</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="s2">&quot;table td span:nth-child(2)&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span></div>
+
+<div class="viewcode-block" id="MCServer.changePassword"><a class="viewcode-back" href="../../../api/#minehost.MCServer.changePassword">[docs]</a>	<span class="k">def</span> <span class="nf">changePassword</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+		<span class="sd">&quot;&quot;&quot;Change the current password to a new randomly generated password. Passwords can only be changed every few minutes.</span>
+
+<span class="sd">		:return: Whether the change was successful</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">__url</span><span class="si">}</span><span class="s2">/failai/change-password&quot;</span><span class="p">)</span>
+		<span class="k">return</span> <span class="n">res</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;class=</span><span class="se">\&quot;</span><span class="s2">alert alert-info</span><span class="se">\&quot;</span><span class="s2">&quot;</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span></div>
+
+<div class="viewcode-block" id="MCServer.getStats"><a class="viewcode-back" href="../../../api/#minehost.MCServer.getStats">[docs]</a>	<span class="k">def</span> <span class="nf">getStats</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+		<span class="sd">&quot;&quot;&quot;Returns a dictionary containing the current statistcs of the server.</span>
+
+<span class="sd">		:return: A dictionary containing &quot;state&quot;, &quot;version&quot;, &quot;ping&quot;, &quot;online_players&quot; and &quot;max_players&quot;</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__url</span><span class="p">)</span>
+		<span class="n">soup</span> <span class="o">=</span> <span class="n">BeautifulSoup</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="s2">&quot;lxml&quot;</span><span class="p">)</span>
+		
+		<span class="n">version</span> <span class="o">=</span> <span class="n">soup</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;mc_versija&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span>
+		<span class="n">version</span> <span class="o">=</span> <span class="n">version</span> <span class="o">!=</span> <span class="s2">&quot;-&quot;</span> <span class="ow">and</span> <span class="n">version</span> <span class="ow">or</span> <span class="kc">None</span>
+
+		<span class="n">ping</span> <span class="o">=</span> <span class="n">soup</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;mc_ping&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span>
+		<span class="n">ping</span> <span class="o">=</span> <span class="n">ping</span> <span class="o">!=</span> <span class="s2">&quot;-&quot;</span> <span class="ow">and</span> <span class="nb">int</span><span class="p">(</span><span class="n">ping</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span>
+
+		<span class="n">online_players</span> <span class="o">=</span> <span class="n">soup</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;mc_online&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span>
+		<span class="n">online_players</span> <span class="o">=</span> <span class="n">online_players</span> <span class="o">!=</span> <span class="s2">&quot;-&quot;</span> <span class="ow">and</span> <span class="nb">int</span><span class="p">(</span><span class="n">online_players</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span>
+		
+		<span class="n">max_players</span> <span class="o">=</span> <span class="n">soup</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;mc_zaidejai&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span>
+		<span class="n">max_players</span> <span class="o">=</span> <span class="n">max_players</span> <span class="o">!=</span> <span class="s2">&quot;-&quot;</span> <span class="ow">and</span> <span class="nb">int</span><span class="p">(</span><span class="n">max_players</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span>
+		
+		<span class="k">return</span> <span class="p">{</span>
+			<span class="s2">&quot;state&quot;</span><span class="p">:</span> <span class="n">soup</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;mc_status&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
+			<span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="n">version</span><span class="p">,</span>
+			<span class="s2">&quot;ping&quot;</span><span class="p">:</span> <span class="n">ping</span><span class="p">,</span>
+			<span class="s2">&quot;online_players&quot;</span><span class="p">:</span> <span class="n">online_players</span><span class="p">,</span>
+			<span class="s2">&quot;max_players&quot;</span><span class="p">:</span> <span class="n">max_players</span>
+		<span class="p">}</span></div>
+	
+<div class="viewcode-block" id="MCServer.getExpirationDate"><a class="viewcode-back" href="../../../api/#minehost.MCServer.getExpirationDate">[docs]</a>	<span class="k">def</span> <span class="nf">getExpirationDate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">:</span>
+		<span class="sd">&quot;&quot;&quot;Returns the date at which the server will expire.</span>
+
+<span class="sd">		:return: A datetime object</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">__url</span><span class="si">}</span><span class="s2">/finansai&quot;</span><span class="p">)</span>
+		<span class="n">date_match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;Serveris galioja iki: (\d</span><span class="si">{4}</span><span class="s2">-\d</span><span class="si">{2}</span><span class="s2">-\d</span><span class="si">{2}</span><span class="s2"> \d{1,2}:\d</span><span class="si">{2}</span><span class="s2">:\d</span><span class="si">{2}</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="n">res</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+		<span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">date_match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span><span class="p">)</span></div>
+
+	<span class="nd">@property</span>
+	<span class="k">def</span> <span class="nf">start_file</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">__url</span><span class="si">}</span><span class="s2">/paleidimo-failas&quot;</span><span class="p">)</span>
+		<span class="n">soup</span> <span class="o">=</span> <span class="n">BeautifulSoup</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="s2">&quot;lxml&quot;</span><span class="p">)</span>
+		<span class="k">return</span> <span class="n">soup</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;input&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">&quot;startlinein&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span>
+
+	<span class="nd">@start_file</span><span class="o">.</span><span class="n">setter</span>
+	<span class="k">def</span> <span class="nf">start_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">__url</span><span class="si">}</span><span class="s2">/mc-versijos&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="p">{</span>
+			<span class="s2">&quot;startfile&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">start_file</span><span class="p">)</span>
+		<span class="p">})</span>
+
+	<span class="nd">@property</span>
+	<span class="k">def</span> <span class="nf">ssh_port</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="o">+</span><span class="mi">1</span>
+	
+	<span class="nd">@property</span>
+	<span class="k">def</span> <span class="nf">sftp_port</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="o">+</span><span class="mi">1</span>
+	
+	<span class="nd">@property</span>
+	<span class="k">def</span> <span class="nf">ftp_port</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="o">+</span><span class="mi">3</span>
+
+	<span class="nd">@property</span>
+	<span class="k">def</span> <span class="nf">short_address</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="n">info_res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__url</span><span class="p">)</span>
+		<span class="n">soup</span> <span class="o">=</span> <span class="n">BeautifulSoup</span><span class="p">(</span><span class="n">info_res</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="s2">&quot;lxml&quot;</span><span class="p">)</span>
+		<span class="k">return</span> <span class="n">soup</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;shortaddr&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span>
+
+	<span class="nd">@short_address</span><span class="o">.</span><span class="n">setter</span>
+	<span class="k">def</span> <span class="nf">short_address</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">short_address</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+		<span class="n">domains</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;.minehost.lt&quot;</span><span class="p">,</span> <span class="s2">&quot;.hotmc.eu&quot;</span><span class="p">)</span>
+		<span class="n">subdomain</span><span class="p">,</span> <span class="n">domain_index</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+
+		<span class="k">for</span> <span class="n">domain</span> <span class="ow">in</span> <span class="n">domains</span><span class="p">:</span>
+			<span class="n">found_index</span> <span class="o">=</span> <span class="n">short_address</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">domain</span><span class="p">)</span>
+			<span class="k">if</span> <span class="n">found_index</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">short_address</span><span class="p">)</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">domain</span><span class="p">):</span>
+				<span class="n">domain_index</span> <span class="o">=</span> <span class="n">domains</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">domain</span><span class="p">)</span>
+				<span class="n">subdomain</span> <span class="o">=</span> <span class="n">short_address</span><span class="p">[:</span><span class="n">found_index</span><span class="p">]</span>
+				<span class="k">break</span>
+		
+		<span class="k">if</span> <span class="n">domain_index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+			<span class="k">raise</span> <span class="n">InvalidDomainException</span><span class="p">()</span>
+
+		<span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/query/subdomenas.php&quot;</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">{</span>
+			<span class="s2">&quot;f&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+			<span class="s2">&quot;s&quot;</span><span class="p">:</span> <span class="n">subdomain</span><span class="p">,</span>
+			<span class="s2">&quot;t&quot;</span><span class="p">:</span> <span class="n">domain_index</span>
+		<span class="p">})</span>
+		<span class="k">if</span> <span class="n">res</span><span class="o">.</span><span class="n">content</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;UTF-8&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;Šis subdomenas jau užimtas. Bandykite kitą&quot;</span><span class="p">:</span>
+			<span class="k">raise</span> <span class="n">InvalidDomainException</span><span class="p">()</span>
+
+<div class="viewcode-block" id="MCServer.FTP"><a class="viewcode-back" href="../../../api/#minehost.MCServer.FTP">[docs]</a>	<span class="k">def</span> <span class="nf">FTP</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ftplib</span><span class="o">.</span><span class="n">FTP</span><span class="p">:</span>
+		<span class="sd">&quot;&quot;&quot;Creates a new FTP connection to the server. The password will be automatically inputted.</span>
+
+<span class="sd">		:return: An open FTP connection</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="n">ftp</span> <span class="o">=</span> <span class="n">ftplib</span><span class="o">.</span><span class="n">FTP</span><span class="p">()</span>
+		<span class="n">ftp</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ip</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ftp_port</span><span class="p">)</span>
+		<span class="n">ftp</span><span class="o">.</span><span class="n">login</span><span class="p">(</span><span class="s2">&quot;serveris&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">getPassword</span><span class="p">())</span>
+		<span class="k">return</span> <span class="n">ftp</span></div>
+
+<div class="viewcode-block" id="MCServer.SSH"><a class="viewcode-back" href="../../../api/#minehost.MCServer.SSH">[docs]</a>	<span class="k">def</span> <span class="nf">SSH</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">paramiko</span><span class="o">.</span><span class="n">SSHClient</span><span class="p">:</span>
+		<span class="sd">&quot;&quot;&quot;Creates a new SSH connection to the server. The password will be automatically inputted.</span>
+
+<span class="sd">		:return: An open SSH connection</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="n">ssh</span> <span class="o">=</span> <span class="n">paramiko</span><span class="o">.</span><span class="n">SSHClient</span><span class="p">()</span>
+		<span class="n">ssh</span><span class="o">.</span><span class="n">set_missing_host_key_policy</span><span class="p">(</span><span class="n">paramiko</span><span class="o">.</span><span class="n">AutoAddPolicy</span><span class="p">())</span>
+		<span class="n">ssh</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ip</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ssh_port</span><span class="p">,</span> <span class="n">username</span><span class="o">=</span><span class="s2">&quot;console&quot;</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">getPassword</span><span class="p">())</span>
+		<span class="k">return</span> <span class="n">ssh</span></div>
+
+<div class="viewcode-block" id="MCServer.CommandSender"><a class="viewcode-back" href="../../../api/#minehost.MCServer.CommandSender">[docs]</a>	<span class="k">def</span> <span class="nf">CommandSender</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CommandSender</span><span class="p">:</span>
+		<span class="sd">&quot;&quot;&quot;Creates a new CommandSender which allow you to easily send commands to the console.</span>
+
+<span class="sd">		:return: The newly created CommandSender.</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="k">return</span> <span class="n">CommandSender</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ip</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">getPassword</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssh_port</span><span class="p">)</span></div>
+
+	<span class="k">def</span> <span class="nf">__isControlLocked</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/query/user_loadingct.php&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="p">{</span>
+			<span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">__key</span>
+		<span class="p">})</span>
+		<span class="k">return</span> <span class="n">res</span><span class="o">.</span><span class="n">text</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span>
+
+<div class="viewcode-block" id="MCServer.start"><a class="viewcode-back" href="../../../api/#minehost.MCServer.start">[docs]</a>	<span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+		<span class="sd">&quot;&quot;&quot;Tries starting the server.</span>
+
+<span class="sd">		:return: Whether if it succeded in starting the server.</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__isControlLocked</span><span class="p">():</span>
+			<span class="k">return</span> <span class="kc">False</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/query/server_ct.php&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="p">{</span>
+			<span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">__key</span><span class="p">,</span>
+			<span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="s2">&quot;startmc&quot;</span><span class="p">,</span>
+			<span class="s2">&quot;st&quot;</span><span class="p">:</span> <span class="s2">&quot;mc&quot;</span>
+		<span class="p">})</span>
+		<span class="k">return</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="MCServer.stop"><a class="viewcode-back" href="../../../api/#minehost.MCServer.stop">[docs]</a>	<span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+		<span class="sd">&quot;&quot;&quot;Tries stopping the server.</span>
+
+<span class="sd">		:return: Whether if it succeded in stopping the server.</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__isControlLocked</span><span class="p">():</span>
+			<span class="k">return</span> <span class="kc">False</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/query/server_ct.php&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="p">{</span>
+			<span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">__key</span><span class="p">,</span>
+			<span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="s2">&quot;stopmc&quot;</span><span class="p">,</span>
+			<span class="s2">&quot;st&quot;</span><span class="p">:</span> <span class="s2">&quot;mc&quot;</span>
+		<span class="p">})</span>
+		<span class="k">return</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="MCServer.kill"><a class="viewcode-back" href="../../../api/#minehost.MCServer.kill">[docs]</a>	<span class="k">def</span> <span class="nf">kill</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+		<span class="sd">&quot;&quot;&quot;Tries killing the server. This is the same as stopping but killing dosen&#39;t save anything.</span>
+
+<span class="sd">		:return: Whether if it succeded in killing the server.</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__isControlLocked</span><span class="p">():</span>
+			<span class="k">return</span> <span class="kc">False</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/query/server_ct.php&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="p">{</span>
+			<span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">__key</span><span class="p">,</span>
+			<span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="s2">&quot;killrestartmc&quot;</span><span class="p">,</span>
+			<span class="s2">&quot;st&quot;</span><span class="p">:</span> <span class="s2">&quot;mc&quot;</span>
+		<span class="p">})</span>
+		<span class="k">return</span> <span class="kc">True</span></div></div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../">MineHost Interface</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Reference</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../">Documentation overview</a><ul>
+  <li><a href="../../">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Rokas Puzonas.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

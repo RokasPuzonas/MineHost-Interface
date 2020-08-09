@@ -1,0 +1,272 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>minehost.account &#8212; MineHost Interface 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for minehost.account</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">bs4</span> <span class="kn">import</span> <span class="n">BeautifulSoup</span><span class="p">,</span> <span class="n">Tag</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">import</span> <span class="nn">math</span>
+
+<span class="kn">from</span> <span class="nn">.server</span> <span class="kn">import</span> <span class="n">MCServer</span>
+<span class="kn">from</span> <span class="nn">.session</span> <span class="kn">import</span> <span class="n">Session</span><span class="p">,</span> <span class="n">InvalidSessionException</span>
+
+<span class="c1"># The changing of the password and profile info, are intentionally not implemented.</span>
+<span class="c1"># It&#39;s just too much power</span>
+
+<span class="n">datetime_format</span> <span class="o">=</span> <span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span>
+
+<div class="viewcode-block" id="Account"><a class="viewcode-back" href="../../../api/#minehost.Account">[docs]</a><span class="k">class</span> <span class="nc">Account</span><span class="p">:</span>
+	<span class="sd">&quot;&quot;&quot;Used to get servers, history, balance and other details associated to a specific account.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Account.__init__"><a class="viewcode-back" href="../../../api/#minehost.Account.__init__">[docs]</a>	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">email</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">password</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;Initializes an account</span>
+
+<span class="sd">		:param email: email used to login, defaults to None</span>
+<span class="sd">		:type email: str, optional</span>
+<span class="sd">		:param password: password used to login, defaults to None</span>
+<span class="sd">		:type password: str, optional</span>
+<span class="sd">		:param session: an already created session can be provided, defaults to None</span>
+<span class="sd">		:type session: :class:`Session &lt;Session&gt;`, optional</span>
+<span class="sd">		:raises InvalidSessionException: Raised when the given custom session is invalid or when nothing was provided</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">email</span> <span class="o">=</span> <span class="n">email</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="kc">None</span>
+		<span class="k">if</span> <span class="n">email</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">password</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">Session</span><span class="p">(</span><span class="n">email</span><span class="p">,</span> <span class="n">password</span><span class="p">)</span>
+		<span class="k">elif</span> <span class="n">session</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">session</span>
+
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">isValid</span><span class="p">():</span>
+			<span class="k">raise</span> <span class="n">InvalidSessionException</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Account.__repr__"><a class="viewcode-back" href="../../../api/#minehost.Account.__repr__">[docs]</a>	<span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&lt;Account(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">email</span><span class="si">}</span><span class="s2">)&gt;&quot;</span></div>
+
+<div class="viewcode-block" id="Account.getServers"><a class="viewcode-back" href="../../../api/#minehost.Account.getServers">[docs]</a>	<span class="k">def</span> <span class="nf">getServers</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+		<span class="sd">&quot;&quot;&quot;Returns a list of minecraft server objects.</span>
+
+<span class="sd">		:return: List of MCServer</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="n">control_res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/mano-serveriai&quot;</span><span class="p">)</span>
+		<span class="n">servers</span> <span class="o">=</span> <span class="p">[]</span>
+		<span class="k">for</span> <span class="n">server_id</span> <span class="ow">in</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s2">&quot;/minecraft-serverio-valdymas/(\d*)/&quot;</span><span class="p">,</span> <span class="n">control_res</span><span class="o">.</span><span class="n">text</span><span class="p">):</span>
+			<span class="n">servers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">MCServer</span><span class="p">(</span><span class="n">server_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">))</span>
+		<span class="k">return</span> <span class="n">servers</span></div>
+		
+<div class="viewcode-block" id="Account.getServer"><a class="viewcode-back" href="../../../api/#minehost.Account.getServer">[docs]</a>	<span class="k">def</span> <span class="nf">getServer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MCServer</span><span class="p">:</span>
+		<span class="sd">&quot;&quot;&quot;Helper method get a server quickly.</span>
+<span class="sd">		Most people will only want to interact with 1 server.</span>
+
+<span class="sd">		:param i: Index of server (0 indexed), defaults to 0</span>
+<span class="sd">		:type i: int, optional</span>
+<span class="sd">		:return: A MCServer</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getServers</span><span class="p">()[</span><span class="n">i</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="Account.getBalance"><a class="viewcode-back" href="../../../api/#minehost.Account.getBalance">[docs]</a>	<span class="k">def</span> <span class="nf">getBalance</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+		<span class="sd">&quot;&quot;&quot;Current balance in account.</span>
+
+<span class="sd">		:return: A float representing the current balance.</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="n">balance_res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/balanso-pildymas&quot;</span><span class="p">)</span>
+		<span class="n">balance_match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;balanse yra (\d+\.?\d*)&quot;</span><span class="p">,</span> <span class="n">balance_res</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+		<span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">balance_match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="Account.getDetails"><a class="viewcode-back" href="../../../api/#minehost.Account.getDetails">[docs]</a>	<span class="k">def</span> <span class="nf">getDetails</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+		<span class="sd">&quot;&quot;&quot;Returns a dictionary containing general details about account.</span>
+<span class="sd">		Available details: email, name, surname, phone, skype.</span>
+
+<span class="sd">		:return: A dictionary with account details.</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="n">profile_res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/profilio-nustatymai&quot;</span><span class="p">)</span>
+		<span class="n">soup</span> <span class="o">=</span> <span class="n">BeautifulSoup</span><span class="p">(</span><span class="n">profile_res</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="s2">&quot;lxml&quot;</span><span class="p">)</span>
+		<span class="k">return</span> <span class="p">{</span>
+			<span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;Vartotojas: ([\w\.-]+@[\w\.-]+)&quot;</span><span class="p">,</span> <span class="n">profile_res</span><span class="o">.</span><span class="n">text</span><span class="p">)</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
+			<span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">soup</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;input&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">&quot;v1&quot;</span><span class="p">)[</span><span class="s2">&quot;value&quot;</span><span class="p">],</span>
+			<span class="s2">&quot;surname&quot;</span><span class="p">:</span> <span class="n">soup</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;input&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">&quot;v2&quot;</span><span class="p">)[</span><span class="s2">&quot;value&quot;</span><span class="p">],</span>
+			<span class="s2">&quot;phone&quot;</span><span class="p">:</span> <span class="n">soup</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;input&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">&quot;v4&quot;</span><span class="p">)[</span><span class="s2">&quot;value&quot;</span><span class="p">],</span>
+			<span class="s2">&quot;skype&quot;</span><span class="p">:</span> <span class="n">soup</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;input&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">&quot;v5&quot;</span><span class="p">)[</span><span class="s2">&quot;value&quot;</span><span class="p">]</span>
+		<span class="p">}</span></div>
+
+<div class="viewcode-block" id="Account.getLoginHistory"><a class="viewcode-back" href="../../../api/#minehost.Account.getLoginHistory">[docs]</a>	<span class="k">def</span> <span class="nf">getLoginHistory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+		<span class="sd">&quot;&quot;&quot;Returns a list of entries, where each entry holds the date and ip of who logged in.</span>
+<span class="sd">		Entry keys: date, ip.</span>
+
+<span class="sd">		:param limit: The maximum number of entries it should try getting, defaults to math.inf</span>
+<span class="sd">		:type limit: int, optional</span>
+<span class="sd">		:return: A list of entries where each entry is a dictionary.</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="n">history_res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/istorija/prisijungimu-istorija&quot;</span><span class="p">)</span>
+		<span class="n">soup</span> <span class="o">=</span> <span class="n">BeautifulSoup</span><span class="p">(</span><span class="n">history_res</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="s2">&quot;lxml&quot;</span><span class="p">)</span>
+		<span class="n">history</span> <span class="o">=</span> <span class="p">[]</span>
+
+		<span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">soup</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;table&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+			<span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span> <span class="o">!=</span> <span class="n">Tag</span><span class="p">:</span> <span class="k">continue</span>
+			
+			<span class="n">fields</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">findAll</span><span class="p">(</span><span class="s2">&quot;td&quot;</span><span class="p">,</span> <span class="n">align</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">)</span>
+			<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">fields</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span> <span class="k">continue</span>
+
+			<span class="n">history</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+				<span class="s2">&quot;date&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="n">datetime_format</span><span class="p">),</span>
+				<span class="s2">&quot;ip&quot;</span><span class="p">:</span> <span class="n">fields</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">text</span>
+			<span class="p">})</span>
+			<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">history</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">limit</span><span class="p">:</span> <span class="k">break</span>
+
+		<span class="k">return</span> <span class="n">history</span></div>
+
+<div class="viewcode-block" id="Account.getFinanceHistory"><a class="viewcode-back" href="../../../api/#minehost.Account.getFinanceHistory">[docs]</a>	<span class="k">def</span> <span class="nf">getFinanceHistory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+		<span class="sd">&quot;&quot;&quot;Returns a list of entries where each entry describes a transaction.</span>
+<span class="sd">		Entry keys: date, action, balance_change, balance_remainder</span>
+
+<span class="sd">		:param limit: The maximum number of entries it should try getting, defaults to math.inf</span>
+<span class="sd">		:type limit: int, optional</span>
+<span class="sd">		:return: A list of entries where each entry is a dictionary.</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="n">history_res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/balanso-pildymas/ataskaita&quot;</span><span class="p">)</span>
+		<span class="n">soup</span> <span class="o">=</span> <span class="n">BeautifulSoup</span><span class="p">(</span><span class="n">history_res</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="s2">&quot;lxml&quot;</span><span class="p">)</span>
+		<span class="n">history</span> <span class="o">=</span> <span class="p">[]</span>
+
+		<span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">soup</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;table&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+			<span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span> <span class="o">!=</span> <span class="n">Tag</span><span class="p">:</span> <span class="k">continue</span>
+			
+			<span class="n">fields</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">findAll</span><span class="p">(</span><span class="s2">&quot;td&quot;</span><span class="p">)</span>
+			<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">fields</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">4</span><span class="p">:</span> <span class="k">continue</span>
+
+			<span class="n">history</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+				<span class="s2">&quot;date&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="n">datetime_format</span><span class="p">),</span>
+				<span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="n">fields</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
+				<span class="s2">&quot;balance_change&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">[:</span><span class="o">-</span><span class="mi">4</span><span class="p">]),</span>
+				<span class="s2">&quot;balance_remainder&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">[:</span><span class="o">-</span><span class="mi">3</span><span class="p">]),</span>
+			<span class="p">})</span>
+			<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">history</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">limit</span><span class="p">:</span> <span class="k">break</span>
+
+		<span class="k">return</span> <span class="n">history</span></div>
+
+<div class="viewcode-block" id="Account.getProfileDetailsHistory"><a class="viewcode-back" href="../../../api/#minehost.Account.getProfileDetailsHistory">[docs]</a>	<span class="k">def</span> <span class="nf">getProfileDetailsHistory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+		<span class="sd">&quot;&quot;&quot;Returns a list of entries where each entry describes what was changed and by who.</span>
+<span class="sd">		Entry keys: date, name, surname, phone, skype, ip.</span>
+
+<span class="sd">		:param limit: The maximum number of entries it should try getting, defaults to math.inf</span>
+<span class="sd">		:type limit: int, optional</span>
+<span class="sd">		:return: A list of entries where each entry is a dictionary.</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="n">history_res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/profilio-nustatymai&quot;</span><span class="p">)</span>
+		<span class="n">soup</span> <span class="o">=</span> <span class="n">BeautifulSoup</span><span class="p">(</span><span class="n">history_res</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="s2">&quot;lxml&quot;</span><span class="p">)</span>
+		<span class="n">history</span> <span class="o">=</span> <span class="p">[]</span>
+
+		<span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">soup</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;table&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+			<span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span> <span class="o">!=</span> <span class="n">Tag</span><span class="p">:</span> <span class="k">continue</span>
+			
+			<span class="n">fields</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">findAll</span><span class="p">(</span><span class="s2">&quot;td&quot;</span><span class="p">)</span>
+			<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">fields</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">6</span><span class="p">:</span> <span class="k">continue</span>
+
+			<span class="n">history</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+				<span class="s2">&quot;date&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="n">datetime_format</span><span class="p">),</span>
+				<span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">fields</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
+				<span class="s2">&quot;surname&quot;</span><span class="p">:</span> <span class="n">fields</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
+				<span class="s2">&quot;phone&quot;</span><span class="p">:</span> <span class="n">fields</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
+				<span class="s2">&quot;skype&quot;</span><span class="p">:</span> <span class="n">fields</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
+				<span class="s2">&quot;ip&quot;</span><span class="p">:</span> <span class="n">fields</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">text</span>
+			<span class="p">})</span>
+			<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">history</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">limit</span><span class="p">:</span> <span class="k">break</span>
+
+		<span class="k">return</span> <span class="n">history</span></div></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../">MineHost Interface</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Reference</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../">Documentation overview</a><ul>
+  <li><a href="../../">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Rokas Puzonas.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,528 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Reference &#8212; MineHost Interface 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex/" />
+    <link rel="search" title="Search" href="../search/" />
+    <link rel="prev" title="Welcome to the MineHost Interface documentation!" href="../" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="api-reference">
+<h1>API Reference<a class="headerlink" href="#api-reference" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="session">
+<h2>Session<a class="headerlink" href="#session" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="minehost.Session">
+<em class="property">class </em><code class="sig-prename descclassname">minehost.</code><code class="sig-name descname">Session</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">email</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">password</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/minehost/session/#Session"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#minehost.Session" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper object around the requests.Session.
+Checks if it’s logged on every request.</p>
+<dl class="py method">
+<dt id="minehost.Session.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">email</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">password</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/minehost/session/#Session.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#minehost.Session.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes session if email and password are given.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>email</strong> (<em>str</em><em>, </em><em>optional</em>) – If provided with password will try to login.</p></li>
+<li><p><strong>password</strong> (<em>str</em><em>, </em><em>optional</em>) – If provided with email will try to login.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="minehost.Session.isValid">
+<code class="sig-name descname">isValid</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; bool<a class="reference internal" href="../_modules/minehost/session/#Session.isValid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#minehost.Session.isValid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns true if current session is logged in, otherwise false.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>True if logged in.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="minehost.Session.login">
+<code class="sig-name descname">login</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">email</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">password</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/minehost/session/#Session.login"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#minehost.Session.login" title="Permalink to this definition">¶</a></dt>
+<dd><p>Attempts to login using the given credentials.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>email</strong> (<em>str</em>) – Email used to login.</p></li>
+<li><p><strong>password</strong> (<em>str</em>) – Password associated to given email.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><a class="reference internal" href="#minehost.session.IncorrectLoginException" title="minehost.session.IncorrectLoginException"><strong>IncorrectLoginException</strong></a> – Raised on failed login.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="minehost.Session.logout">
+<code class="sig-name descname">logout</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/minehost/session/#Session.logout"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#minehost.Session.logout" title="Permalink to this definition">¶</a></dt>
+<dd><p>The session becomes invalid and will raise error if tried to request anything.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="minehost.Session.request">
+<code class="sig-name descname">request</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">method</span></em>, <em class="sig-param"><span class="n">url</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kvargs</span></em><span class="sig-paren">)</span> &#x2192; requests.models.Response<a class="reference internal" href="../_modules/minehost/session/#Session.request"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#minehost.Session.request" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper function around the default requests.request method.
+Instead of giving the whole url like “<a class="reference external" href="https://minehost.lt/logout">https://minehost.lt/logout</a>” now you only need to write “/logout”.`</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>requests.Response object</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="account">
+<h2>Account<a class="headerlink" href="#account" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="minehost.Account">
+<em class="property">class </em><code class="sig-prename descclassname">minehost.</code><code class="sig-name descname">Account</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">email</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">password</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">session</span><span class="p">:</span> <span class="n">minehost.session.Session</span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/minehost/account/#Account"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#minehost.Account" title="Permalink to this definition">¶</a></dt>
+<dd><p>Used to get servers, history, balance and other details associated to a specific account.</p>
+<dl class="py method">
+<dt id="minehost.Account.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">email</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">password</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">session</span><span class="p">:</span> <span class="n">minehost.session.Session</span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/minehost/account/#Account.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#minehost.Account.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes an account</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>email</strong> (<em>str</em><em>, </em><em>optional</em>) – email used to login, defaults to None</p></li>
+<li><p><strong>password</strong> (<em>str</em><em>, </em><em>optional</em>) – password used to login, defaults to None</p></li>
+<li><p><strong>session</strong> (<a class="reference internal" href="#minehost.Session" title="minehost.Session"><code class="xref py py-class docutils literal notranslate"><span class="pre">Session</span></code></a>, optional) – an already created session can be provided, defaults to None</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><a class="reference internal" href="#minehost.session.InvalidSessionException" title="minehost.session.InvalidSessionException"><strong>InvalidSessionException</strong></a> – Raised when the given custom session is invalid or when nothing was provided</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="minehost.Account.__repr__">
+<code class="sig-name descname">__repr__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/minehost/account/#Account.__repr__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#minehost.Account.__repr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return repr(self).</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="minehost.Account.__weakref__">
+<code class="sig-name descname">__weakref__</code><a class="headerlink" href="#minehost.Account.__weakref__" title="Permalink to this definition">¶</a></dt>
+<dd><p>list of weak references to the object (if defined)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="minehost.Account.getBalance">
+<code class="sig-name descname">getBalance</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/minehost/account/#Account.getBalance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#minehost.Account.getBalance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Current balance in account.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A float representing the current balance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="minehost.Account.getDetails">
+<code class="sig-name descname">getDetails</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; dict<a class="reference internal" href="../_modules/minehost/account/#Account.getDetails"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#minehost.Account.getDetails" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a dictionary containing general details about account.
+Available details: email, name, surname, phone, skype.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A dictionary with account details.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="minehost.Account.getFinanceHistory">
+<code class="sig-name descname">getFinanceHistory</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">limit</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">inf</span></em><span class="sig-paren">)</span> &#x2192; list<a class="reference internal" href="../_modules/minehost/account/#Account.getFinanceHistory"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#minehost.Account.getFinanceHistory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of entries where each entry describes a transaction.
+Entry keys: date, action, balance_change, balance_remainder</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>limit</strong> (<em>int</em><em>, </em><em>optional</em>) – The maximum number of entries it should try getting, defaults to math.inf</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A list of entries where each entry is a dictionary.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="minehost.Account.getLoginHistory">
+<code class="sig-name descname">getLoginHistory</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">limit</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">inf</span></em><span class="sig-paren">)</span> &#x2192; list<a class="reference internal" href="../_modules/minehost/account/#Account.getLoginHistory"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#minehost.Account.getLoginHistory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of entries, where each entry holds the date and ip of who logged in.
+Entry keys: date, ip.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>limit</strong> (<em>int</em><em>, </em><em>optional</em>) – The maximum number of entries it should try getting, defaults to math.inf</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A list of entries where each entry is a dictionary.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="minehost.Account.getProfileDetailsHistory">
+<code class="sig-name descname">getProfileDetailsHistory</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">limit</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">inf</span></em><span class="sig-paren">)</span> &#x2192; list<a class="reference internal" href="../_modules/minehost/account/#Account.getProfileDetailsHistory"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#minehost.Account.getProfileDetailsHistory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of entries where each entry describes what was changed and by who.
+Entry keys: date, name, surname, phone, skype, ip.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>limit</strong> (<em>int</em><em>, </em><em>optional</em>) – The maximum number of entries it should try getting, defaults to math.inf</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A list of entries where each entry is a dictionary.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="minehost.Account.getServer">
+<code class="sig-name descname">getServer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">i</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">0</span></em><span class="sig-paren">)</span> &#x2192; minehost.server.MCServer<a class="reference internal" href="../_modules/minehost/account/#Account.getServer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#minehost.Account.getServer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper method get a server quickly.
+Most people will only want to interact with 1 server.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>i</strong> (<em>int</em><em>, </em><em>optional</em>) – Index of server (0 indexed), defaults to 0</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A MCServer</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="minehost.Account.getServers">
+<code class="sig-name descname">getServers</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; list<a class="reference internal" href="../_modules/minehost/account/#Account.getServers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#minehost.Account.getServers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of minecraft server objects.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>List of MCServer</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="mcserver">
+<h2>MCServer<a class="headerlink" href="#mcserver" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="minehost.MCServer">
+<em class="property">class </em><code class="sig-prename descclassname">minehost.</code><code class="sig-name descname">MCServer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">server_id</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">session</span><span class="p">:</span> <span class="n">minehost.session.Session</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/minehost/server/#MCServer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#minehost.MCServer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Used to control a minehost minecraft server</p>
+<dl class="py method">
+<dt id="minehost.MCServer.CommandSender">
+<code class="sig-name descname">CommandSender</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#minehost.server.CommandSender" title="minehost.server.CommandSender">minehost.server.CommandSender</a><a class="reference internal" href="../_modules/minehost/server/#MCServer.CommandSender"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#minehost.MCServer.CommandSender" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a new CommandSender which allow you to easily send commands to the console.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The newly created CommandSender.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="minehost.MCServer.FTP">
+<code class="sig-name descname">FTP</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; ftplib.FTP<a class="reference internal" href="../_modules/minehost/server/#MCServer.FTP"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#minehost.MCServer.FTP" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a new FTP connection to the server. The password will be automatically inputted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>An open FTP connection</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="minehost.MCServer.SSH">
+<code class="sig-name descname">SSH</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; paramiko.client.SSHClient<a class="reference internal" href="../_modules/minehost/server/#MCServer.SSH"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#minehost.MCServer.SSH" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a new SSH connection to the server. The password will be automatically inputted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>An open SSH connection</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="minehost.MCServer.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">server_id</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">session</span><span class="p">:</span> <span class="n">minehost.session.Session</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/minehost/server/#MCServer.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#minehost.MCServer.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes minecraft server instance. Retrieves some initial data like: address, ip and port.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>server_id</strong> (<em>str</em>) – [description]</p></li>
+<li><p><strong>session</strong> (<a class="reference internal" href="#minehost.Session" title="minehost.Session"><em>Session</em></a>) – [description]</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="minehost.MCServer.__repr__">
+<code class="sig-name descname">__repr__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/minehost/server/#MCServer.__repr__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#minehost.MCServer.__repr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return repr(self).</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="minehost.MCServer.__weakref__">
+<code class="sig-name descname">__weakref__</code><a class="headerlink" href="#minehost.MCServer.__weakref__" title="Permalink to this definition">¶</a></dt>
+<dd><p>list of weak references to the object (if defined)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="minehost.MCServer.changePassword">
+<code class="sig-name descname">changePassword</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; bool<a class="reference internal" href="../_modules/minehost/server/#MCServer.changePassword"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#minehost.MCServer.changePassword" title="Permalink to this definition">¶</a></dt>
+<dd><p>Change the current password to a new randomly generated password. Passwords can only be changed every few minutes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Whether the change was successful</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="minehost.MCServer.getExpirationDate">
+<code class="sig-name descname">getExpirationDate</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; datetime.datetime<a class="reference internal" href="../_modules/minehost/server/#MCServer.getExpirationDate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#minehost.MCServer.getExpirationDate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the date at which the server will expire.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A datetime object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="minehost.MCServer.getPassword">
+<code class="sig-name descname">getPassword</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; str<a class="reference internal" href="../_modules/minehost/server/#MCServer.getPassword"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#minehost.MCServer.getPassword" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieves the password used to login to SSH, FTP and SFTP.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A string containing the password</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="minehost.MCServer.getStats">
+<code class="sig-name descname">getStats</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; dict<a class="reference internal" href="../_modules/minehost/server/#MCServer.getStats"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#minehost.MCServer.getStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a dictionary containing the current statistcs of the server.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A dictionary containing “state”, “version”, “ping”, “online_players” and “max_players”</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="minehost.MCServer.kill">
+<code class="sig-name descname">kill</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; bool<a class="reference internal" href="../_modules/minehost/server/#MCServer.kill"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#minehost.MCServer.kill" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tries killing the server. This is the same as stopping but killing dosen’t save anything.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Whether if it succeded in killing the server.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="minehost.MCServer.start">
+<code class="sig-name descname">start</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; bool<a class="reference internal" href="../_modules/minehost/server/#MCServer.start"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#minehost.MCServer.start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tries starting the server.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Whether if it succeded in starting the server.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="minehost.MCServer.stop">
+<code class="sig-name descname">stop</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; bool<a class="reference internal" href="../_modules/minehost/server/#MCServer.stop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#minehost.MCServer.stop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tries stopping the server.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Whether if it succeded in stopping the server.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="commandsender">
+<h2>CommandSender<a class="headerlink" href="#commandsender" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="minehost.server.CommandSender">
+<em class="property">class </em><code class="sig-prename descclassname">minehost.server.</code><code class="sig-name descname">CommandSender</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">host</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">password</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">port</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">22</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/minehost/server/#CommandSender"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#minehost.server.CommandSender" title="Permalink to this definition">¶</a></dt>
+<dd><p>Used to directly send commands to a minecraft server.
+Rather than loggin into ssh, entering console manually.</p>
+<dl class="py method">
+<dt id="minehost.server.CommandSender.close">
+<code class="sig-name descname">close</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/minehost/server/#CommandSender.close"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#minehost.server.CommandSender.close" title="Permalink to this definition">¶</a></dt>
+<dd><p>Closes channel used to send commands.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>Exception</strong> – Raised if channel is already closed</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="minehost.server.CommandSender.open">
+<code class="sig-name descname">open</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/minehost/server/#CommandSender.open"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#minehost.server.CommandSender.open" title="Permalink to this definition">¶</a></dt>
+<dd><p>Opens a channel used to send commands.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>Exception</strong> – Raised if channel is already open</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="minehost.server.CommandSender.send">
+<code class="sig-name descname">send</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/minehost/server/#CommandSender.send"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#minehost.server.CommandSender.send" title="Permalink to this definition">¶</a></dt>
+<dd><p>Send commands to the server. You are able to send to multiple commands by giving multiple arguments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>*args</strong> (<em>str</em>) – Commands you would like the server to execute.</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>Exception</strong> – Raised if channel is not open</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="exceptions">
+<h2>Exceptions<a class="headerlink" href="#exceptions" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="minehost.server.InvalidDomainException">
+<em class="property">class </em><code class="sig-prename descclassname">minehost.server.</code><code class="sig-name descname">InvalidDomainException</code><a class="reference internal" href="../_modules/minehost/server/#InvalidDomainException"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#minehost.server.InvalidDomainException" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raised when trying to change a server address with an unsupported domain.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt id="minehost.session.IncorrectLoginException">
+<em class="property">class </em><code class="sig-prename descclassname">minehost.session.</code><code class="sig-name descname">IncorrectLoginException</code><a class="reference internal" href="../_modules/minehost/session/#IncorrectLoginException"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#minehost.session.IncorrectLoginException" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raised when the given email and passwords are incorrect.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt id="minehost.session.InvalidSessionException">
+<em class="property">class </em><code class="sig-prename descclassname">minehost.session.</code><code class="sig-name descname">InvalidSessionException</code><a class="reference internal" href="../_modules/minehost/session/#InvalidSessionException"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#minehost.session.InvalidSessionException" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raised when the current session is logged out or timed out.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../">MineHost Interface</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#session">Session</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#account">Account</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#mcserver">MCServer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#commandsender">CommandSender</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#exceptions">Exceptions</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../">Documentation overview</a><ul>
+      <li>Previous: <a href="../" title="previous chapter">Welcome to the MineHost Interface documentation!</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Rokas Puzonas.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/api.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

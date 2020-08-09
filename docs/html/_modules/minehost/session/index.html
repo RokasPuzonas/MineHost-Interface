@@ -1,0 +1,174 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>minehost.session &#8212; MineHost Interface 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for minehost.session</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">requests</span>
+
+<div class="viewcode-block" id="IncorrectLoginException"><a class="viewcode-back" href="../../../api/#minehost.IncorrectLoginException">[docs]</a><span class="k">class</span> <span class="nc">IncorrectLoginException</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;Raised when the given email and passwords are incorrect.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="InvalidSessionException"><a class="viewcode-back" href="../../../api/#minehost.InvalidSessionException">[docs]</a><span class="k">class</span> <span class="nc">InvalidSessionException</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;Raised when the current session is logged out or timed out.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="Session"><a class="viewcode-back" href="../../../api/#minehost.Session">[docs]</a><span class="k">class</span> <span class="nc">Session</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">Session</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;Wrapper object around the requests.Session.</span>
+<span class="sd">	Checks if it&#39;s logged on every request.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Session.__init__"><a class="viewcode-back" href="../../../api/#minehost.Session.__init__">[docs]</a>	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">email</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">password</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;Initializes session if email and password are given.</span>
+
+<span class="sd">		:param email: If provided with password will try to login.</span>
+<span class="sd">		:type email: str, optional</span>
+<span class="sd">		:param password: If provided with email will try to login.</span>
+<span class="sd">		:type password: str, optional</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+		<span class="k">if</span> <span class="n">email</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">password</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">login</span><span class="p">(</span><span class="n">email</span><span class="p">,</span> <span class="n">password</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Session.login"><a class="viewcode-back" href="../../../api/#minehost.Session.login">[docs]</a>	<span class="k">def</span> <span class="nf">login</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">email</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">password</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;Attempts to login using the given credentials.</span>
+
+<span class="sd">		:param email: Email used to login.</span>
+<span class="sd">		:type email: str</span>
+<span class="sd">		:param password: Password associated to given email.</span>
+<span class="sd">		:type password: str</span>
+<span class="sd">		:raises IncorrectLoginException: Raised on failed login.</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="n">requests</span><span class="o">.</span><span class="n">Session</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;POST&quot;</span><span class="p">,</span> <span class="s2">&quot;https://minehost.lt/prisijungimas-prie-sistemos&quot;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
+			<span class="s2">&quot;login&quot;</span><span class="p">:</span> <span class="n">email</span><span class="p">,</span>
+			<span class="s2">&quot;password&quot;</span><span class="p">:</span> <span class="n">password</span>
+		<span class="p">})</span>
+		<span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">isValid</span><span class="p">():</span>
+			<span class="k">raise</span> <span class="n">IncorrectLoginException</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Session.logout"><a class="viewcode-back" href="../../../api/#minehost.Session.logout">[docs]</a>	<span class="k">def</span> <span class="nf">logout</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;The session becomes invalid and will raise error if tried to request anything.</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/logout&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Session.request"><a class="viewcode-back" href="../../../api/#minehost.Session.request">[docs]</a>	<span class="k">def</span> <span class="nf">request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kvargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">requests</span><span class="o">.</span><span class="n">Response</span><span class="p">:</span>
+		<span class="sd">&quot;&quot;&quot;Wrapper function around the default requests.request method.</span>
+<span class="sd">		Instead of giving the whole url like &quot;https://minehost.lt/logout&quot; now you only need to write &quot;/logout&quot;.`</span>
+<span class="sd">		</span>
+<span class="sd">		:return: requests.Response object</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">Session</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="s2">&quot;https://minehost.lt&quot;</span><span class="o">+</span><span class="n">url</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kvargs</span><span class="p">)</span>
+		<span class="c1"># Basic check to see if the session is still logged in. Looks for the logout button.</span>
+		<span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;href=</span><span class="se">\&quot;</span><span class="s2">/logout</span><span class="se">\&quot;</span><span class="s2">&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">and</span> <span class="n">response</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;src=</span><span class="se">\&quot;</span><span class="s2">/img/logo.png</span><span class="se">\&quot;</span><span class="s2">&quot;</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+			<span class="k">raise</span> <span class="n">InvalidSessionException</span><span class="p">()</span>
+		
+		<span class="k">return</span> <span class="n">response</span></div>
+
+<div class="viewcode-block" id="Session.isValid"><a class="viewcode-back" href="../../../api/#minehost.Session.isValid">[docs]</a>	<span class="k">def</span> <span class="nf">isValid</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+		<span class="sd">&quot;&quot;&quot;Returns true if current session is logged in, otherwise false.</span>
+
+<span class="sd">		:return: True if logged in.</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/valdymo-pultas&quot;</span><span class="p">)</span>
+		<span class="k">return</span> <span class="n">res</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;&lt;meta http-equiv=</span><span class="se">\&quot;</span><span class="s2">refresh</span><span class="se">\&quot;</span><span class="s2"> content=</span><span class="se">\&quot;</span><span class="s2">0;url=/prisijungimas-prie-sistemos</span><span class="se">\&quot;</span><span class="s2">&gt;&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span></div></div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../">MineHost Interface</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Reference</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../">Documentation overview</a><ul>
+  <li><a href="../../">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Rokas Puzonas.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
