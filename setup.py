@@ -5,7 +5,7 @@ with open("README.md", "r") as f:
 
 setuptools.setup(
 	name="minehost-interface",
-	version="1.0.1",
+	version="1.0.2",
 	author="Rokas Puzonas",
 	author_email="rokas.puz@gmail.com",
 	description="A simple for interacting with minehost servers.",
