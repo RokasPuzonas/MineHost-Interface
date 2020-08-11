@@ -5,13 +5,17 @@ with open("README.md", "r") as f:
 
 setuptools.setup(
 	name="minehost-interface",
-	version="1.0.2",
+	version="1.0.3",
 	author="Rokas Puzonas",
 	author_email="rokas.puz@gmail.com",
 	description="A simple for interacting with minehost servers.",
 	long_description=long_description,
 	long_description_content_type="text/markdown",
 	url="https://github.com/RokasPuzonas/minehost-interface",
+	project_urls={
+		"Documentation": "https://rokaspuzonas.github.io/minehost-interface",
+		"Source Code": "https://github.com/RokasPuzonas/minehost-interface",
+	},
 	license="MIT",
 	packages=setuptools.find_packages(),
 	classifiers=[
